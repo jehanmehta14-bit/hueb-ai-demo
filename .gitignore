@@ -1,0 +1,18 @@
+# Dependencies installed by npm.
+node_modules
+
+# Next.js build output.
+.next
+out
+
+# Deployment tool folders.
+.vercel
+
+# Local environment files can contain private API keys.
+.env
+.env.local
+.env*.local
+
+# Mac and log files that do not belong in the project.
+.DS_Store
+*.log
