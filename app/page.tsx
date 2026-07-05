@@ -87,74 +87,100 @@ export default function HomePage() {
 
   return (
     <main className="page-shell">
-      <section className="chat-panel" aria-label="Hueb AI concierge chat">
-        <div className="brand-bar">
-          <div>
-            <p className="eyebrow">Hueb AI Concierge</p>
-            <h1>Luxury jewelry guidance, from a tiny demo catalog.</h1>
+      <section className="concierge-column" aria-label="Hueb AI concierge chat">
+        <header className="top-bar">
+          <a className="wordmark" href="https://www.hueb.com">
+            HUEB
+          </a>
+          <span className="private-label">Private AI Concierge</span>
+        </header>
+
+        <div className="hero-copy">
+          <p className="eyebrow">Fine jewelry guidance</p>
+          <h1>A private consultation for pieces with presence.</h1>
+          <p className="hero-text">
+            Describe the moment, the metal, the mood, or the budget. Your
+            concierge will curate from the Hueb product selection.
+          </p>
+        </div>
+
+        <div className="salon-card">
+          <div className="salon-card-header">
+            <div>
+              <p className="eyebrow">Concierge conversation</p>
+              <h2>Tell us what you are looking for.</h2>
+            </div>
+            <span className="availability-dot">Live</span>
           </div>
-          <span className="status-pill">Prototype</span>
+
+          <div className="conversation">
+            {messages.map((message, index) => (
+              <div
+                className={`message ${message.role}`}
+                key={`${message.role}-${index}`}
+              >
+                <span>{message.role === "advisor" ? "Advisor" : "You"}</span>
+                <p>{message.text}</p>
+              </div>
+            ))}
+
+            {isLoading ? (
+              <div className="message advisor">
+                <span>Advisor</span>
+                <p>Selecting pieces from the Hueb catalog...</p>
+              </div>
+            ) : null}
+          </div>
+
+          <form className="chat-form" onSubmit={handleSubmit}>
+            <input
+              aria-label="Message"
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Try: yellow gold earrings under $5,000 for a birthday gift"
+              value={input}
+            />
+            <button disabled={isLoading} type="submit">
+              Send
+            </button>
+          </form>
+
+          {error ? <p className="error-message">{error}</p> : null}
         </div>
-
-        <div className="conversation">
-          {messages.map((message, index) => (
-            <div
-              className={`message ${message.role}`}
-              key={`${message.role}-${index}`}
-            >
-              <span>{message.role === "advisor" ? "Advisor" : "You"}</span>
-              <p>{message.text}</p>
-            </div>
-          ))}
-
-          {isLoading ? (
-            <div className="message advisor">
-              <span>Advisor</span>
-              <p>Selecting pieces from the Hueb demo catalog...</p>
-            </div>
-          ) : null}
-        </div>
-
-        <form className="chat-form" onSubmit={handleSubmit}>
-          <input
-            aria-label="Message"
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Try: I need yellow gold earrings under $5,000 for a birthday gift"
-            value={input}
-          />
-          <button disabled={isLoading} type="submit">
-            Send
-          </button>
-        </form>
-
-        {error ? <p className="error-message">{error}</p> : null}
       </section>
 
       <section className="recommendations" aria-label="Recommended products">
         <div className="section-heading">
-          <p className="eyebrow">Recommendations</p>
-          <h2>Catalog pieces selected for this conversation</h2>
+          <p className="eyebrow">Curated selection</p>
+          <h2>Recommended by your concierge</h2>
+          <p>
+            Product cards appear here after your concierge finds matching Hueb
+            pieces.
+          </p>
         </div>
 
         {recommendedProducts.length === 0 ? (
           <div className="empty-state">
-            Ask for a style, occasion, metal, category, or budget to see product
-            cards here.
+            <p>Awaiting your first request</p>
+            <span>
+              Ask for an occasion, budget, metal, category, stone, or style to
+              begin the curation.
+            </span>
           </div>
         ) : (
           <div className="product-grid">
             {recommendedProducts.map((product) => (
               <article className="product-card" key={product.id}>
-                <img alt={product.name} src={product.image_url} />
+                <div className="image-wrap">
+                  <img alt={product.name} src={product.image_url} />
+                </div>
                 <div className="product-content">
-                  <p className="collection">{product.collection}</p>
+                  <div className="product-topline">
+                    <p className="collection">{product.collection}</p>
+                    <span>${product.price_usd.toLocaleString()}</span>
+                  </div>
                   <h3>{product.name}</h3>
                   <p>{product.description}</p>
                   <dl>
-                    <div>
-                      <dt>Price</dt>
-                      <dd>${product.price_usd.toLocaleString()}</dd>
-                    </div>
                     <div>
                       <dt>Metal</dt>
                       <dd>{product.metal}</dd>
@@ -163,8 +189,12 @@ export default function HomePage() {
                       <dt>Occasion</dt>
                       <dd>{product.occasion}</dd>
                     </div>
+                    <div>
+                      <dt>Stones</dt>
+                      <dd>{product.stones.join(", ")}</dd>
+                    </div>
                   </dl>
-                  <a href={product.product_url}>View placeholder product</a>
+                  <a href={product.product_url}>View product</a>
                 </div>
               </article>
             ))}
@@ -177,52 +207,100 @@ export default function HomePage() {
           box-sizing: border-box;
         }
 
-        body {
-          margin: 0;
-          background: #f7f1e8;
-          color: #211a16;
-          font-family: Arial, Helvetica, sans-serif;
+        :root {
+          --ivory: #fbf6ee;
+          --champagne: #ead9bd;
+          --soft-gold: #b88a45;
+          --deep-gold: #8d6731;
+          --espresso: #231712;
+          --espresso-soft: #4e3b30;
+          --porcelain: #fffdf8;
+          --rose-shell: #f3e7dc;
+          --line: rgba(117, 83, 45, 0.18);
+          --shadow: 0 30px 90px rgba(45, 30, 17, 0.12);
         }
 
+        body {
+          margin: 0;
+          background:
+            linear-gradient(120deg, rgba(255, 252, 246, 0.92), rgba(238, 221, 194, 0.82)),
+            var(--ivory);
+          color: var(--espresso);
+          font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
+        }
+
+        /* The page now uses a two-column editorial layout like a luxury shopping service. */
         .page-shell {
           min-height: 100vh;
-          padding: 40px;
+          padding: 34px;
           display: grid;
-          grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 1.05fr);
+          grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+          gap: 34px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .page-shell::before {
+          content: "";
+          position: absolute;
+          inset: 18px;
+          border: 1px solid rgba(184, 138, 69, 0.18);
+          pointer-events: none;
+        }
+
+        .concierge-column,
+        .recommendations {
+          position: relative;
+          z-index: 1;
+        }
+
+        .concierge-column {
+          min-height: calc(100vh - 68px);
+          display: flex;
+          flex-direction: column;
           gap: 28px;
         }
 
-        .chat-panel,
-        .recommendations {
-          background: rgba(255, 252, 247, 0.92);
-          border: 1px solid #e6d7c5;
-          border-radius: 8px;
-          box-shadow: 0 24px 70px rgba(53, 39, 25, 0.12);
-        }
-
-        .chat-panel {
-          min-height: calc(100vh - 80px);
-          padding: 28px;
+        .top-bar {
           display: flex;
-          flex-direction: column;
-        }
-
-        .brand-bar {
-          display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: space-between;
-          gap: 20px;
-          border-bottom: 1px solid #eadfce;
-          padding-bottom: 22px;
+          gap: 18px;
+        }
+
+        .wordmark {
+          color: var(--espresso);
+          font-family: Didot, "Bodoni 72", Georgia, serif;
+          font-size: 26px;
+          letter-spacing: 0.18em;
+          text-decoration: none;
+        }
+
+        .private-label,
+        .availability-dot {
+          border: 1px solid rgba(184, 138, 69, 0.36);
+          border-radius: 999px;
+          color: var(--deep-gold);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          padding: 9px 13px;
+          text-transform: uppercase;
+          white-space: nowrap;
+        }
+
+        .hero-copy {
+          max-width: 700px;
+          padding: 28px 4px 0;
         }
 
         .eyebrow,
         .collection {
-          margin: 0 0 8px;
-          color: #8a6b47;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
+          margin: 0 0 10px;
+          color: var(--deep-gold);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.18em;
           text-transform: uppercase;
         }
 
@@ -230,75 +308,115 @@ export default function HomePage() {
         h2,
         h3 {
           margin: 0;
-          font-family: Georgia, "Times New Roman", serif;
-          font-weight: 500;
+          color: var(--espresso);
+          font-family: Didot, "Bodoni 72", Georgia, serif;
+          font-weight: 400;
         }
 
         h1 {
-          max-width: 560px;
-          font-size: 40px;
-          line-height: 1.05;
+          max-width: 720px;
+          font-size: clamp(48px, 6.2vw, 86px);
+          line-height: 0.95;
+        }
+
+        .hero-text {
+          max-width: 570px;
+          margin: 22px 0 0;
+          color: var(--espresso-soft);
+          font-size: 17px;
+          line-height: 1.75;
         }
 
         h2 {
-          font-size: 26px;
+          font-size: 30px;
+          line-height: 1.12;
         }
 
         h3 {
-          font-size: 22px;
+          font-size: 25px;
+          line-height: 1.15;
         }
 
-        .status-pill {
-          border: 1px solid #b89965;
-          border-radius: 999px;
-          color: #6f512d;
-          flex: 0 0 auto;
-          font-size: 12px;
-          padding: 8px 12px;
+        /* The chat container is styled like a private salon tray instead of a basic demo panel. */
+        .salon-card,
+        .recommendations {
+          background: rgba(255, 253, 248, 0.88);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(18px);
+        }
+
+        .salon-card {
+          flex: 1;
+          min-height: 470px;
+          padding: 26px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .salon-card-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+          border-bottom: 1px solid var(--line);
+          padding-bottom: 20px;
+        }
+
+        .availability-dot {
+          background: #fff9ef;
+          color: #7f5a28;
         }
 
         .conversation {
           flex: 1;
-          padding: 24px 0;
+          padding: 24px 4px;
           overflow-y: auto;
         }
 
+        /* Message bubbles are intentionally soft and quiet, like a private consultation. */
         .message {
           margin-bottom: 16px;
           max-width: 88%;
-          padding: 14px 16px;
+          padding: 15px 17px;
           border-radius: 8px;
+          box-shadow: 0 12px 26px rgba(48, 32, 18, 0.06);
         }
 
         .message span {
           display: block;
-          margin-bottom: 6px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #8a6b47;
+          margin-bottom: 7px;
+          color: var(--deep-gold);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
         }
 
         .message p {
           margin: 0;
-          line-height: 1.55;
+          font-size: 15px;
+          line-height: 1.65;
         }
 
         .message.advisor {
-          background: #f0e4d4;
+          background: var(--rose-shell);
+          border: 1px solid rgba(184, 138, 69, 0.14);
         }
 
         .message.user {
-          background: #211a16;
-          color: white;
+          background: var(--espresso);
+          color: #fff8ee;
           margin-left: auto;
         }
 
         .message.user span {
-          color: #d6b987;
+          color: var(--champagne);
         }
 
         .chat-form {
-          border-top: 1px solid #eadfce;
+          border-top: 1px solid var(--line);
           display: grid;
           grid-template-columns: 1fr auto;
           gap: 12px;
@@ -313,24 +431,33 @@ export default function HomePage() {
 
         input {
           width: 100%;
-          border: 1px solid #d9c7af;
-          background: white;
-          color: #211a16;
-          padding: 14px 16px;
+          border: 1px solid rgba(141, 103, 49, 0.26);
+          background: rgba(255, 255, 255, 0.82);
+          color: var(--espresso);
+          padding: 15px 16px;
+          outline: none;
+        }
+
+        input:focus {
+          border-color: rgba(184, 138, 69, 0.8);
+          box-shadow: 0 0 0 4px rgba(184, 138, 69, 0.12);
         }
 
         button {
           border: 0;
-          background: #8a5d2f;
-          color: white;
+          background: var(--espresso);
+          color: #fff9ef;
           cursor: pointer;
-          font-weight: 700;
-          padding: 0 22px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          min-width: 104px;
+          padding: 0 24px;
+          text-transform: uppercase;
         }
 
         button:disabled {
           cursor: not-allowed;
-          opacity: 0.6;
+          opacity: 0.58;
         }
 
         .error-message {
@@ -339,105 +466,213 @@ export default function HomePage() {
         }
 
         .recommendations {
-          padding: 28px;
+          min-height: calc(100vh - 68px);
+          padding: 30px;
+          display: flex;
+          flex-direction: column;
         }
 
         .section-heading {
-          margin-bottom: 20px;
+          border-bottom: 1px solid var(--line);
+          margin-bottom: 24px;
+          padding-bottom: 22px;
+        }
+
+        .section-heading p:last-child {
+          max-width: 560px;
+          margin: 12px 0 0;
+          color: var(--espresso-soft);
+          line-height: 1.65;
         }
 
         .empty-state {
-          border: 1px dashed #d8c6ad;
+          flex: 1;
+          min-height: 360px;
+          border: 1px dashed rgba(141, 103, 49, 0.3);
           border-radius: 8px;
-          color: #6f6258;
-          line-height: 1.6;
-          padding: 22px;
+          color: var(--espresso-soft);
+          display: grid;
+          place-content: center;
+          padding: 34px;
+          text-align: center;
+        }
+
+        .empty-state p {
+          margin: 0 0 10px;
+          color: var(--espresso);
+          font-family: Didot, "Bodoni 72", Georgia, serif;
+          font-size: 32px;
+        }
+
+        .empty-state span {
+          display: block;
+          max-width: 390px;
+          line-height: 1.65;
         }
 
         .product-grid {
           display: grid;
-          gap: 18px;
+          gap: 22px;
         }
 
+        /* Product cards now resemble luxury ecommerce tiles with image-first hierarchy. */
         .product-card {
-          background: #fffaf4;
-          border: 1px solid #e6d7c5;
+          background: var(--porcelain);
+          border: 1px solid rgba(184, 138, 69, 0.18);
           border-radius: 8px;
+          box-shadow: 0 20px 55px rgba(45, 30, 17, 0.08);
           display: grid;
-          grid-template-columns: 180px 1fr;
+          grid-template-columns: 230px 1fr;
+          overflow: hidden;
+          transition:
+            box-shadow 180ms ease,
+            transform 180ms ease;
+        }
+
+        .product-card:hover {
+          box-shadow: 0 28px 70px rgba(45, 30, 17, 0.13);
+          transform: translateY(-2px);
+        }
+
+        .image-wrap {
+          background: #f0e6d8;
+          min-height: 260px;
           overflow: hidden;
         }
 
         .product-card img {
           width: 100%;
           height: 100%;
-          min-height: 220px;
           object-fit: cover;
+          transition: transform 240ms ease;
+        }
+
+        .product-card:hover img {
+          transform: scale(1.035);
         }
 
         .product-content {
-          padding: 20px;
+          padding: 24px;
+        }
+
+        .product-topline {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+        }
+
+        .product-topline span {
+          color: var(--espresso);
+          font-size: 14px;
+          font-weight: 800;
+          white-space: nowrap;
         }
 
         .product-content p {
-          color: #5f5248;
-          line-height: 1.55;
+          color: var(--espresso-soft);
+          line-height: 1.62;
         }
 
         dl {
           display: grid;
-          gap: 10px;
+          gap: 12px;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          margin: 18px 0;
+          margin: 20px 0;
         }
 
         dt {
-          color: #8a6b47;
-          font-size: 12px;
-          font-weight: 700;
+          color: var(--deep-gold);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
         }
 
         dd {
-          margin: 4px 0 0;
-          color: #211a16;
+          margin: 5px 0 0;
+          color: var(--espresso);
+          font-size: 13px;
+          line-height: 1.35;
+          text-transform: capitalize;
         }
 
         a {
-          color: #8a5d2f;
-          font-weight: 700;
+          color: var(--deep-gold);
+          display: inline-flex;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.12em;
           text-decoration: none;
+          text-transform: uppercase;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1020px) {
           .page-shell {
             grid-template-columns: 1fr;
-            padding: 20px;
+            padding: 24px;
           }
 
-          .chat-panel {
+          .page-shell::before {
+            inset: 12px;
+          }
+
+          .concierge-column,
+          .recommendations {
             min-height: auto;
           }
         }
 
-        @media (max-width: 620px) {
-          h1 {
-            font-size: 32px;
+        @media (max-width: 680px) {
+          .page-shell {
+            gap: 22px;
+            padding: 16px;
           }
 
-          .brand-bar,
+          .page-shell::before {
+            display: none;
+          }
+
+          .top-bar,
+          .salon-card-header,
+          .product-topline {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .hero-copy {
+            padding-top: 14px;
+          }
+
+          h1 {
+            font-size: 46px;
+          }
+
+          h2 {
+            font-size: 25px;
+          }
+
+          .salon-card,
+          .recommendations {
+            padding: 20px;
+          }
+
+          .message {
+            max-width: 96%;
+          }
+
           .chat-form,
           .product-card,
           dl {
             grid-template-columns: 1fr;
           }
 
-          .brand-bar {
-            display: grid;
+          button {
+            min-height: 50px;
           }
 
-          button {
-            min-height: 48px;
+          .image-wrap {
+            min-height: 300px;
           }
         }
       `}</style>
