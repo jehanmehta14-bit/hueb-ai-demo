@@ -27,6 +27,56 @@ type AdvisorResponse = {
 
 const productCatalog = products as Product[];
 
+type RateLimitEntry = {
+  requestCount: number;
+  windowStartedAt: number;
+};
+
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const rateLimitByIp = new Map<string, RateLimitEntry>();
+const rateLimitMessage =
+  "You’ve reached the request limit for now. Please try again later.";
+
+function getClientIp(request: Request) {
+  // The IP address tells us which visitor is making the request.
+  // On Vercel, x-forwarded-for often contains the real visitor IP first,
+  // followed by proxy IPs. Locally, it may be missing, so we use a demo fallback.
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+
+  return forwardedFor?.split(",")[0]?.trim() || realIp || "local-demo-user";
+}
+
+function isRateLimited(request: Request) {
+  // Rate limiting means counting how many requests a visitor makes in a time window.
+  // This protects OpenAI API costs because repeated spam requests get blocked before
+  // the server calls OpenAI.
+  const clientIp = getClientIp(request);
+  const now = Date.now();
+  const currentEntry = rateLimitByIp.get(clientIp);
+
+  // The in-memory Map stores one counter per IP address.
+  // This is simple and good for a demo, but it resets when the server restarts.
+  if (!currentEntry || now - currentEntry.windowStartedAt >= RATE_LIMIT_WINDOW_MS) {
+    rateLimitByIp.set(clientIp, {
+      requestCount: 1,
+      windowStartedAt: now
+    });
+
+    return false;
+  }
+
+  if (currentEntry.requestCount >= RATE_LIMIT_MAX_REQUESTS) {
+    return true;
+  }
+
+  currentEntry.requestCount += 1;
+  rateLimitByIp.set(clientIp, currentEntry);
+
+  return false;
+}
+
 function findBudget(message: string) {
   // This beginner-friendly budget parser looks for phrases like "$5000",
   // "$5,000", "under 5000", or "below 5000".
@@ -164,6 +214,16 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Please send a message to the concierge." },
         { status: 400 }
+      );
+    }
+
+    if (isRateLimited(request)) {
+      return NextResponse.json(
+        {
+          advisor_message: rateLimitMessage,
+          recommended_products: []
+        },
+        { status: 429 }
       );
     }
 

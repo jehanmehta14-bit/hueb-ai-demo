@@ -93,6 +93,16 @@ The catalog is in `data/products.json`.
 - The current products are placeholders.
 - Replace them later with real Hueb product data when available.
 
+## Rate Limiting
+
+The `/api/chat` route includes a simple in-memory rate limiter.
+
+- Each IP address can make 10 chat requests per hour.
+- If someone goes over the limit, the API returns HTTP `429`.
+- This protects OpenAI API costs by blocking repeated spam requests before the app calls OpenAI.
+
+This is beginner-friendly and works for demos, but it is not ideal for production. In production, especially on Vercel where server instances can restart or scale, replace the in-memory `Map` with shared storage such as Redis, Vercel KV, or Upstash.
+
 ## Important Learning Note
 
 Never put your OpenAI API key directly in frontend code.
