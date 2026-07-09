@@ -7,7 +7,8 @@ type Product = {
   id: string;
   name: string;
   collection: string;
-  price_usd: number;
+  price_usd: number | null;
+  price_note: string;
   category: string;
   metal: string;
   stones: string[];
@@ -16,8 +17,8 @@ type Product = {
   occasion: string;
   style_keywords: string[];
   matching_products: string[];
-  product_url: string;
-  image_url: string;
+  product_url: string | null;
+  image_url: string | null;
 };
 
 type AdvisorResponse = {
@@ -100,20 +101,20 @@ function scoreProduct(product: Product, message: string) {
   let score = 0;
 
   const budget = findBudget(lowerMessage);
-  if (budget && product.price_usd <= budget) score += 4;
-  if (budget && product.price_usd > budget) score -= 3;
+  if (budget && product.price_usd !== null && product.price_usd <= budget) score += 4;
+  if (budget && product.price_usd !== null && product.price_usd > budget) score -= 3;
 
   // Category search: ring, necklace, bracelet, or earrings.
-  if (lowerMessage.includes(product.category.toLowerCase())) score += 5;
+  if (product.category && lowerMessage.includes(product.category.toLowerCase())) score += 5;
 
   // Metal search: yellow gold, white gold, rose gold, etc.
-  if (lowerMessage.includes(product.metal.toLowerCase())) score += 4;
+  if (product.metal && lowerMessage.includes(product.metal.toLowerCase())) score += 4;
   if (product.metal.toLowerCase().includes("yellow") && lowerMessage.includes("gold")) {
     score += 2;
   }
 
   // Collection search: Solana, Clarity, Moonlit, etc.
-  if (lowerMessage.includes(product.collection.toLowerCase())) score += 4;
+  if (product.collection && lowerMessage.includes(product.collection.toLowerCase())) score += 4;
 
   // Occasion search: graduation gift, birthday gift, gala, self purchase, etc.
   if (lowerMessage.includes(product.occasion.toLowerCase())) score += 4;
@@ -150,7 +151,12 @@ function findTopMatchingProducts(message: string) {
   }));
 
   return scoredProducts
-    .sort((a, b) => b.score - a.score || a.product.price_usd - b.product.price_usd)
+    .sort((a, b) => {
+      const aPrice = a.product.price_usd ?? Number.MAX_SAFE_INTEGER;
+      const bPrice = b.product.price_usd ?? Number.MAX_SAFE_INTEGER;
+
+      return b.score - a.score || aPrice - bPrice;
+    })
     .slice(0, 5)
     .map((item) => item.product);
 }
@@ -292,7 +298,14 @@ export async function POST(request: Request) {
             "Only recommend products from the provided candidate list.",
             "Return JSON with advisor_message and recommended_product_ids.",
             "recommended_product_ids must contain only IDs from the candidate list.",
-            "Recommend 1 to 3 products."
+            "Recommend 1 to 3 products.",
+            "Never invent missing price, stones, metal, collection, URLs, or image details.",
+            "Do not claim prices are exact live website prices.",
+            "If price_usd exists, refer to it as a catalog price from the Shopify export.",
+            "If asked about price accuracy, explain that live website prices may vary by region/currency.",
+            "If price_usd is null, say price available on request instead of making up a price.",
+            "If product_url is null, say this piece may require concierge assistance for availability.",
+            "Never claim a product is available online when product_url is null."
           ].join(" ")
         },
         {
@@ -304,9 +317,11 @@ export async function POST(request: Request) {
               name: product.name,
               collection: product.collection,
               price_usd: product.price_usd,
+              price_note: product.price_note,
               category: product.category,
               metal: product.metal,
               stones: product.stones,
+              product_url: product.product_url,
               description: product.description,
               story: product.story,
               occasion: product.occasion,

@@ -1,0 +1,16 @@
+{
+  "total_products": 826,
+  "products_with_valid_urls": 826,
+  "products_with_missing_or_broken_urls": 0,
+  "products_with_images": 826,
+  "products_missing_images": 0,
+  "products_with_prices": 826,
+  "products_missing_prices": 0,
+  "products_with_collection": 826,
+  "products_missing_collection": 0,
+  "products_with_metal": 826,
+  "products_missing_metal": 0,
+  "products_with_stones": 341,
+  "products_missing_stones": 485,
+  "broken_urls": []
+}

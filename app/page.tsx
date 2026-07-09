@@ -6,7 +6,8 @@ type Product = {
   id: string;
   name: string;
   collection: string;
-  price_usd: number;
+  price_usd: number | null;
+  price_note: string;
   category: string;
   metal: string;
   stones: string[];
@@ -15,8 +16,8 @@ type Product = {
   occasion: string;
   style_keywords: string[];
   matching_products: string[];
-  product_url: string;
-  image_url: string;
+  product_url: string | null;
+  image_url: string | null;
 };
 
 type ChatMessage = {
@@ -171,19 +172,32 @@ export default function HomePage() {
             {recommendedProducts.map((product) => (
               <article className="product-card" key={product.id}>
                 <div className="image-wrap">
-                  <img alt={product.name} src={product.image_url} />
+                  {product.image_url ? (
+                    <img alt={product.name} src={product.image_url} />
+                  ) : (
+                    <div className="image-placeholder">Image available on request</div>
+                  )}
                 </div>
                 <div className="product-content">
                   <div className="product-topline">
-                    <p className="collection">{product.collection}</p>
-                    <span>${product.price_usd.toLocaleString()}</span>
+                    <p className="collection">
+                      {product.collection || "Hueb selection"}
+                    </p>
+                    <span className="price-value">
+                      {product.price_usd === null
+                        ? "Price available on request"
+                        : `Catalog price: $${product.price_usd.toLocaleString()}`}
+                    </span>
                   </div>
+                  {product.price_usd !== null ? (
+                    <p className="price-note">Live website price may vary.</p>
+                  ) : null}
                   <h3>{product.name}</h3>
                   <p>{product.description}</p>
                   <dl>
                     <div>
                       <dt>Metal</dt>
-                      <dd>{product.metal}</dd>
+                      <dd>{product.metal || "Available on request"}</dd>
                     </div>
                     <div>
                       <dt>Occasion</dt>
@@ -191,10 +205,20 @@ export default function HomePage() {
                     </div>
                     <div>
                       <dt>Stones</dt>
-                      <dd>{product.stones.join(", ")}</dd>
+                      <dd>
+                        {product.stones.length > 0
+                          ? product.stones.join(", ")
+                          : "Available on request"}
+                      </dd>
                     </div>
                   </dl>
-                  <a href={product.product_url}>View product</a>
+                  {product.product_url ? (
+                    <a href={product.product_url} rel="noreferrer" target="_blank">
+                      View on Hueb
+                    </a>
+                  ) : (
+                    <span className="concierge-note">Product link unavailable</span>
+                  )}
                 </div>
               </article>
             ))}
@@ -547,6 +571,21 @@ export default function HomePage() {
           transition: transform 240ms ease;
         }
 
+        .image-placeholder {
+          width: 100%;
+          height: 100%;
+          min-height: inherit;
+          display: grid;
+          place-items: center;
+          color: var(--deep-gold);
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          padding: 24px;
+          text-align: center;
+          text-transform: uppercase;
+        }
+
         .product-card:hover img {
           transform: scale(1.035);
         }
@@ -562,11 +601,18 @@ export default function HomePage() {
           gap: 18px;
         }
 
-        .product-topline span {
+        .price-value {
           color: var(--espresso);
           font-size: 14px;
           font-weight: 800;
           white-space: nowrap;
+        }
+
+        .price-note {
+          margin: 6px 0 14px;
+          color: var(--deep-gold);
+          font-size: 12px;
+          font-weight: 700;
         }
 
         .product-content p {
@@ -604,6 +650,15 @@ export default function HomePage() {
           font-weight: 900;
           letter-spacing: 0.12em;
           text-decoration: none;
+          text-transform: uppercase;
+        }
+
+        .concierge-note {
+          color: var(--espresso-soft);
+          display: inline-flex;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
         }
 

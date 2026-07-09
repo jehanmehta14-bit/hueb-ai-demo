@@ -93,6 +93,34 @@ The catalog is in `data/products.json`.
 - The current products are placeholders.
 - Replace them later with real Hueb product data when available.
 
+## Shopify Catalog Import
+
+The script at `scripts/convert-shopify-xlsx-to-products-json.js` converts the Shopify Excel export into `data/products.json`.
+
+Put the export here:
+
+```txt
+data/product data_shopify.xlsx
+```
+
+Then run:
+
+```bash
+npm run convert:products
+```
+
+The script also writes:
+
+```txt
+data/catalog-quality-report.json
+```
+
+Use that report to check catalog health after each import. It shows how many products have generated public URLs, images, prices, collections, metals, and stones.
+
+The importer creates product links from lowercase Shopify handles. It does not remove a link just because an automated request fails, because the live Hueb website may block automated checks or behave differently by region/currency. A product URL is only `null` when the Shopify export has no handle.
+
+Prices are labeled as catalog prices from the Shopify export because live website prices may vary by region/currency. Missing prices are stored as `null`, not `0`, because an unknown price is not the same as a free product.
+
 ## Rate Limiting
 
 The `/api/chat` route includes a simple in-memory rate limiter.
