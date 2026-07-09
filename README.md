@@ -25,6 +25,10 @@ hueb-ai-demo/
         route.ts
   data/
     products.json
+  lib/
+    db.ts
+  sql/
+    create-chat-logs.sql
   .env.example
   README.md
   package.json
@@ -50,6 +54,7 @@ cp .env.example .env.local
 
 ```bash
 OPENAI_API_KEY=your_real_api_key
+DATABASE_URL=your_postgres_connection_string
 ```
 
 4. Start the development server:
@@ -81,6 +86,7 @@ The backend route is in `app/api/chat/route.ts`.
 - It uses OpenAI's Responses API for the advisor message.
 - It asks OpenAI to return product IDs only.
 - It uses those IDs to return real product objects from `products.json`.
+- It saves each successful chat request and response to Postgres when `DATABASE_URL` is configured.
 
 The catalog is in `data/products.json`.
 
@@ -92,3 +98,66 @@ The catalog is in `data/products.json`.
 Never put your OpenAI API key directly in frontend code.
 
 This project keeps the API key in the backend route so the browser cannot see it.
+
+The same rule applies to `DATABASE_URL`. Keep it in `.env.local` locally and in Vercel environment variables when deployed.
+
+## Database Logging Setup
+
+This app can save each chat request and AI response to a Vercel-compatible Postgres database.
+
+### 1. Create A Database On Vercel
+
+In your Vercel project dashboard:
+
+1. Go to the `Storage` tab.
+2. Create a Postgres database. Vercel may offer Neon-backed Postgres.
+3. Copy the database connection string called `DATABASE_URL`.
+
+### 2. Add `DATABASE_URL`
+
+For local development, add it to `.env.local`:
+
+```bash
+DATABASE_URL=your_real_database_url
+```
+
+For deployment, add the same variable in Vercel:
+
+```txt
+Project Settings -> Environment Variables -> DATABASE_URL
+```
+
+Do not commit `.env.local` to GitHub.
+
+### 3. Create The Table
+
+Open your database SQL editor in Vercel or Neon, then run the SQL from:
+
+```txt
+sql/create-chat-logs.sql
+```
+
+That creates a table called `chat_logs`.
+
+### 4. Test Logging
+
+Start the app:
+
+```bash
+npm run dev
+```
+
+Send a chat message in the concierge.
+
+Then run this in your database SQL editor:
+
+```sql
+SELECT *
+FROM chat_logs
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+If logging is working, you will see the latest user message, advisor message, and recommended product IDs/names.
+
+If the database is not set up yet, the chat still works. The server will skip logging instead of crashing the user experience.

@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "convert:products": "node scripts/convert-shopify-xlsx-to-products-json.js",
     "start": "next start"
   },
   "dependencies": {
     "next": "latest",
     "openai": "latest",
+    "pg": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "xlsx": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",

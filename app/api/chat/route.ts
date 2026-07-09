@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import products from "../../../data/products.json";
+import { saveChatLog } from "../../../lib/db";
 
 type Product = {
   id: string;
@@ -116,6 +117,45 @@ function keepOnlyCatalogProducts(productIds: string[], allowedProducts: Product[
     .filter((product): product is Product => Boolean(product));
 }
 
+function isCatalogCountQuestion(message: string) {
+  // Some questions are about the catalog itself, not about recommending jewelry.
+  // Answer these directly from products.json so the AI does not guess.
+  const lowerMessage = message.toLowerCase();
+  const asksHowMany = /how many|number of|count|total/.test(lowerMessage);
+  const mentionsCatalogItems = /piece|pieces|product|products|item|items|jewel|jewelry/.test(
+    lowerMessage
+  );
+
+  return asksHowMany && mentionsCatalogItems;
+}
+
+async function safelySaveChatLog({
+  request,
+  userMessage,
+  advisorMessage,
+  finalProducts
+}: {
+  request: Request;
+  userMessage: string;
+  advisorMessage: string;
+  finalProducts: Product[];
+}) {
+  try {
+    // Database logging happens after the chat response has been created.
+    // If this fails, we catch the error so the shopper still gets the answer.
+    await saveChatLog({
+      userMessage,
+      advisorMessage,
+      recommendedProductIds: finalProducts.map((product) => product.id),
+      recommendedProductNames: finalProducts.map((product) => product.name),
+      userIp: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+      userAgent: request.headers.get("user-agent")
+    });
+  } catch (logError) {
+    console.error("Chat logging failed, but the chat response will still be returned.", logError);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { message } = await request.json();
@@ -125,6 +165,24 @@ export async function POST(request: Request) {
         { error: "Please send a message to the concierge." },
         { status: 400 }
       );
+    }
+
+    if (isCatalogCountQuestion(message)) {
+      const advisorMessage = `There are ${productCatalog.length.toLocaleString(
+        "en-US"
+      )} pieces in the current Hueb catalog.`;
+
+      await safelySaveChatLog({
+        request,
+        userMessage: message,
+        advisorMessage,
+        finalProducts: []
+      });
+
+      return NextResponse.json({
+        advisor_message: advisorMessage,
+        recommended_products: []
+      });
     }
 
     if (!process.env.OPENAI_API_KEY) {
@@ -210,10 +268,19 @@ export async function POST(request: Request) {
     const finalProducts =
       recommendedProducts.length > 0 ? recommendedProducts : matchingProducts.slice(0, 1);
 
+    const advisorMessage =
+      advisorResponse.advisor_message ||
+      "I selected a piece from the Hueb demo catalog that best matches your request.";
+
+    await safelySaveChatLog({
+      request,
+      userMessage: message,
+      advisorMessage,
+      finalProducts
+    });
+
     return NextResponse.json({
-      advisor_message:
-        advisorResponse.advisor_message ||
-        "I selected a piece from the Hueb demo catalog that best matches your request.",
+      advisor_message: advisorMessage,
       recommended_products: finalProducts
     });
   } catch (error) {
